@@ -40,7 +40,6 @@ function update() {
     bird.velocity = 0;
   }
 
-  
   // Update pipes
   for (let i = pipes.length - 1; i >= 0; i--) {
     pipes[i].x -= pipeSpeed; // Move pipe to the left
@@ -91,12 +90,38 @@ function drawPipes() {
   }
 }
 
+function killBird() {
+  for (const pipe of pipes) { // Check if bird hits any of the pipes on screen
+    if (
+      bird.x < pipe.x + pipe.width &&
+      bird.x + bird.width > pipe.x &&
+      bird.y < pipe.y + pipe.height &&
+      bird.y + bird.height > pipe.y
+    ) {
+      bird.y = canvas.height / 2;
+      bird.velocity = 0;
+      pipes.length = 0;
+      frameCount = 0;
+      // console.log("Bird hit pipe");
+    } else if ( // Check if bird hits the pipe above
+      bird.y < 0 &&
+      bird.x + bird.width > pipe.x
+    ) {
+      bird.y = canvas.height / 2;
+      bird.velocity = 0;
+      pipes.length = 0;
+      frameCount = 0;
+      // console.log("Hit the pipe above");
+    }
+  }
+}
 
 function gameLoop() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   update();
   drawBird();
   drawPipes();
+  killBird();
   requestAnimationFrame(gameLoop);
 }
 
