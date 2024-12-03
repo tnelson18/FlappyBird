@@ -1,34 +1,33 @@
-// Select the canvas element
+//We need to select the canvas elemnt we created in index
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 
-// Game variables
+// Using the Image class
+// https://developer.mozilla.org/en-US/docs/Web/API/HTMLImageElement/Image
 const birdImage = new Image();
-birdImage.src = "bird.png"; // Replace with your single bird image URL
+birdImage.src = "images/bird.png";
 
 const bird = {
   x: 100,
   y: canvas.height / 2,
-  width: 34, // Width of the bird image
-  height: 24, // Height of the bird image
-  gravity: 0.6,
+  width: 100,
+  height: 80,
+  gravity: 0.5,
   lift: -10,
   velocity: 0,
 };
 
-// Key events for jumping
 document.addEventListener("keydown", (e) => {
   if (e.code === "Space") {
-    bird.velocity = bird.lift; // Make the bird jump
+    bird.velocity = bird.lift;
   }
 });
 
-// Update game logic
 function update() {
-  bird.velocity += bird.gravity; // Apply gravity
-  bird.y += bird.velocity; // Update bird position
+  bird.velocity += bird.gravity;
+  bird.y += bird.velocity;
 
-  // Prevent the bird from going off-screen
+  // TODO Update to kill bird when it hits the ground
   if (bird.y + bird.height > canvas.height) {
     bird.y = canvas.height - bird.height;
     bird.velocity = 0;
@@ -38,20 +37,18 @@ function update() {
   }
 }
 
-// Draw the bird
 function drawBird() {
   ctx.drawImage(birdImage, bird.x, bird.y, bird.width, bird.height);
 }
 
-// Main game loop
 function gameLoop() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear the canvas
-  update(); // Update game logic
-  drawBird(); // Draw the bird
-  requestAnimationFrame(gameLoop); // Loop the game
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  update();
+  drawBird();
+  requestAnimationFrame(gameLoop);
 }
 
-// Start the game when the bird image is loaded
+// This should hopefully start the game when the canvas is loaded
 birdImage.onload = () => {
   gameLoop();
 };
