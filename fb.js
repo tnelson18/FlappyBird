@@ -4,7 +4,7 @@ const ctx = canvas.getContext("2d");
 
 // Game variables
 const birdImage = new Image();
-birdImage.src = "bird.png"; // Replace with your single bird image URL
+birdImage.src = "images/bird.png"; // Replace with your single bird image URL
 
 const bird = {
   x: 100,
