@@ -3,12 +3,23 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Flappy Bird Game</title>
-  <link rel="stylesheet" href="styles.css"> <!-- Link to external stylesheet -->
+  <title>Flappy Bird</title>
+  <style>
+    body {
+      margin: 0;
+      background: #87CEEB;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+    canvas {
+      border: 2px solid black;
+    }
+  </style>
 </head>
 <body>
-  <h1>Flappy Bird</h1>
-  <canvas id="gameCanvas" width="800" height="600"></canvas> <!-- Game canvas -->
-  <script src="script.js"></script> <!-- Link to external JavaScript file -->
+  <canvas id="gameCanvas" width="800" height="600"></canvas>
+  <script src="fb.js"></script>
 </body>
 </html>
