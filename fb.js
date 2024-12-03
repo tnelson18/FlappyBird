@@ -31,9 +31,6 @@ function update() {
   if (bird.y + bird.height > canvas.height) {
     bird.y = canvas.height - bird.height;
     bird.velocity = 0;
-  } else if (bird.y < 0) {
-    bird.y = 0;
-    bird.velocity = 0;
   }
 }
 
