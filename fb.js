@@ -5,7 +5,7 @@ const ctx = canvas.getContext("2d");
 // Using the Image class
 // https://developer.mozilla.org/en-US/docs/Web/API/HTMLImageElement/Image
 const birdImage = new Image();
-birdImage.src = "images/bird.png";
+birdImage.src = "images/Mike.png";
 
 const bird = {
   x: 100,
@@ -39,6 +39,10 @@ function update() {
 
 function drawBird() {
   ctx.drawImage(birdImage, bird.x, bird.y, bird.width, bird.height);
+}
+
+function killBird() {
+
 }
 
 function gameLoop() {
