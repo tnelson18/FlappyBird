@@ -35,6 +35,8 @@ const bird = {
   velocity: 0,
 };
 
+let paused = true;
+
 const pipes = []; // Array to store pipe objects
 const pipeWidth = 75; // Width of the pipes
 const pipeGap = 250; // Gap between top and bottom pipes
@@ -46,7 +48,21 @@ let playerScore = 0;
 
 document.addEventListener("keydown", (e) => {
   if (e.code === "Space") {
-    bird.velocity = bird.lift;
+    if (paused) {
+      paused = false; // Unpause the game
+    } else {
+      bird.velocity = bird.lift; // Make the bird jump
+    }
+  }
+});
+
+document.addEventListener("keydown", (e) => {
+  if (e.code === "Escape") {
+    if (paused) {
+      paused = false; // Unpause the game
+    } else {
+      paused = true;
+    }
   }
 });
 
@@ -101,10 +117,6 @@ function update() {
   frameCount++;
 }
 
-// function drawBird() {
-//   ctx.drawImage(birdImage, bird.x, bird.y, bird.width, bird.height);
-// }
-
 function drawBird() {
   // Save the current canvas context state
   ctx.save();
@@ -156,14 +168,18 @@ function drawBackground() {
   // Draw the second instance of the background right after the first one
   ctx.drawImage(backgroundImage, backgroundX + canvas.width, 0, canvas.width, canvas.height);
 
-  // Update the background position
-  backgroundX -= backgroundSpeed;
+  if (!paused){
+    // Update the background position
+    backgroundX -= backgroundSpeed;
 
-  // Reset the position when the first image is completely off-screen
-  if (backgroundX <= -canvas.width) {
-    backgroundX = 0;
+    // Reset the position when the first image is completely off-screen
+    if (backgroundX <= -canvas.width) {
+      backgroundX = 0;
+    }
   }
 }
+
+
 function drawGround() {
   const groundHeight = 85; // Set the height of the ground (adjust as needed)
 
@@ -173,12 +189,14 @@ function drawGround() {
   // Draw the second instance of the ground image for seamless scrolling
   ctx.drawImage(groundImage, groundX + canvas.width, canvas.height - groundHeight, canvas.width, groundHeight);
 
-  // Update the ground's horizontal position
-  groundX -= pipeSpeed;
+  if(!paused){
+    // Update the ground's horizontal position
+    groundX -= pipeSpeed;
 
-  // Reset the background position when the first image is completely off-screen
-  if (groundX <= -canvas.width) {
-    groundX = 0;
+    // Reset the background position when the first image is completely off-screen
+    if (groundX <= -canvas.width) {
+      groundX = 0;
+    }
   }
 }
 
@@ -190,6 +208,7 @@ function killBird() {
     bird.velocity = 0;
     pipes.length = 0; // Clear pipes
     frameCount = 0; // Reset frame count
+    paused = true;
     playerScore = 0; // Reset score
     return; // End the function early as the bird is already "dead"
   }
@@ -205,6 +224,7 @@ function killBird() {
       bird.velocity = 0;
       pipes.length = 0;
       frameCount = 0;
+      paused = true;
       playerScore = 0
       // console.log("Bird hit pipe");
     } else if ( // Check if bird hits the pipe above
@@ -215,6 +235,7 @@ function killBird() {
       bird.velocity = 0;
       pipes.length = 0;
       frameCount = 0;
+      paused = true;
       playerScore = 0
       // console.log("Hit the pipe above");
     }
@@ -223,13 +244,33 @@ function killBird() {
 
 function gameLoop() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  update();
-  drawBackground();
-  drawPipes();
-  drawGround();
-  drawBird();
-  drawScore();
-  killBird();
+  if (!paused) {
+    update();
+    drawBackground();
+    drawPipes();
+    drawGround();
+    drawBird();
+    drawScore();
+    killBird();
+  } else {
+    
+    drawBackground();
+    drawPipes();
+    drawGround();
+    drawBird();
+    drawScore();
+
+    // Draw the paused screen overlay
+    ctx.font = "50px Arial";
+    ctx.textAlign = "center";
+    ctx.strokeStyle = "black";
+
+    ctx.lineWidth = 5;
+    ctx.strokeText("Press Space to Start", canvas.width / 2, canvas.height * (1/3));
+
+    ctx.fillStyle = "white";
+    ctx.fillText("Press Space to Start", canvas.width / 2, canvas.height * (1/3));
+  }
   requestAnimationFrame(gameLoop);
 }
 
