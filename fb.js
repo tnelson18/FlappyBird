@@ -19,10 +19,12 @@ const bird = {
 
 const pipes = []; // Array to store pipe objects
 const pipeWidth = 50; // Width of the pipes
-const pipeGap = 150; // Gap between top and bottom pipes
+const pipeGap = 225; // Gap between top and bottom pipes
 const pipeSpeed = 2; // Speed at which pipes move to the left
 const pipeFrequency = 90; // Frames between spawning new pipes
 let frameCount = 0; // Frame counter for controlling pipe spawn rate
+
+let playerScore = 0;
 
 document.addEventListener("keydown", (e) => {
   if (e.code === "Space") {
@@ -44,6 +46,11 @@ function update() {
   for (let i = pipes.length - 1; i >= 0; i--) {
     pipes[i].x -= pipeSpeed; // Move pipe to the left
 
+    if (pipes[i].scored == false && pipes[i].x + pipeWidth < bird.x) {
+      playerScore++; 
+      pipes[i].scored = true;
+    }
+
     // Remove pipes that are off-screen
     if (pipes[i].x + pipeWidth < 0) {
       pipes.splice(i, 1);
@@ -61,6 +68,7 @@ function update() {
       y: 0,
       width: pipeWidth,
       height: pipeTopY,
+      scored: false,
     });
 
     // Add the bottom pipe
@@ -90,6 +98,13 @@ function drawPipes() {
   }
 }
 
+function drawScore() {
+  ctx.fillStyle = "black";
+  ctx.font = "24px Arial";
+  ctx.textAlign = "right";
+  ctx.fillText(`Score: ${playerScore}`, canvas.width - 10, 30); // Top-right corner
+}
+
 function killBird() {
   for (const pipe of pipes) { // Check if bird hits any of the pipes on screen
     if (
@@ -102,6 +117,7 @@ function killBird() {
       bird.velocity = 0;
       pipes.length = 0;
       frameCount = 0;
+      playerScore = 0
       // console.log("Bird hit pipe");
     } else if ( // Check if bird hits the pipe above
       bird.y < 0 &&
@@ -111,6 +127,7 @@ function killBird() {
       bird.velocity = 0;
       pipes.length = 0;
       frameCount = 0;
+      playerScore = 0
       // console.log("Hit the pipe above");
     }
   }
@@ -121,6 +138,7 @@ function gameLoop() {
   update();
   drawBird();
   drawPipes();
+  drawScore();
   killBird();
   requestAnimationFrame(gameLoop);
 }
