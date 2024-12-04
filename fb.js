@@ -52,6 +52,7 @@ const pipeFrequency = 125; // Frames between spawning new pipes
 let frameCount = 0; // Frame counter for controlling pipe spawn rate
 
 let playerScore = 0;
+let highScore = 0;
 
 document.addEventListener("keydown", (e) => {
   if (e.code === "Space") {
@@ -89,6 +90,7 @@ function update() {
 
     if (pipes[i].scored == false && pipes[i].x + pipeWidth < bird.x) {
       playerScore++; 
+      highScore = Math.max(playerScore, highScore);
       pipes[i].scored = true;
     }
 
@@ -301,8 +303,13 @@ function drawEndScreen() {
 
   // Display the player's score
   ctx.font = "40px Arial";
-  ctx.strokeText(`Score: ${playerScore}`, canvas.width / 2, canvas.height / 2);
-  ctx.fillText(`Score: ${playerScore}`, canvas.width / 2, canvas.height / 2);
+  ctx.strokeText(`Score: ${playerScore}`, canvas.width / 2, canvas.height / 2 - 25);
+  ctx.fillText(`Score: ${playerScore}`, canvas.width / 2, canvas.height / 2 - 25);
+
+  // Display the player's high score
+  ctx.font = "40px Arial";
+  ctx.strokeText(`High Score: ${highScore}`, canvas.width / 2, canvas.height / 2 + 25);
+  ctx.fillText(`High Score: ${highScore}`, canvas.width / 2, canvas.height / 2 + 25);
 
   // Display restart instructions
   ctx.font = "30px Arial";
