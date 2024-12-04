@@ -2,6 +2,8 @@
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 
+let gameOver = false; // To track if the game is over
+
 
 // Set the canvas size to match the height of the viewport (making it a square)
 const canvasSize = window.innerHeight; 
@@ -233,15 +235,12 @@ function drawGround() {
 
 
 
+let showEndScreen = false; // Flag for end screen
+
 function killBird() {
   if (bird.y + bird.height >= canvas.height - 85) {
-    bird.y = canvas.height / 2; // Reset bird's position
-    bird.velocity = 0;
-    pipes.length = 0; // Clear pipes
-    frameCount = 0; // Reset frame count
-    paused = true;
-    playerScore = 0; // Reset score
-    return; // End the function early as the bird is already "dead"
+    endGame(); // Trigger end game
+    return; // End the function early
   }
 
   for (const pipe of pipes) { // Check if bird hits any of the pipes on screen
@@ -251,31 +250,70 @@ function killBird() {
       bird.y < pipe.y + pipe.height &&
       bird.y + bird.height > pipe.y
     ) {
-      bird.y = canvas.height / 2;
-      bird.velocity = 0;
-      pipes.length = 0;
-      frameCount = 0;
-      paused = true;
-      playerScore = 0
-      // console.log("Bird hit pipe");
-    } else if ( // Check if bird hits the pipe above
-      bird.y < 0 &&
-      bird.x + bird.width > pipe.x
-    ) {
-      bird.y = canvas.height / 2;
-      bird.velocity = 0;
-      pipes.length = 0;
-      frameCount = 0;
-      paused = true;
-      playerScore = 0
-      // console.log("Hit the pipe above");
+      endGame(); // Trigger end game
+      return; // End the function early
     }
   }
 }
 
+function endGame() {
+  paused = true; // Pause the game
+  showEndScreen = true; // Show the end game screen
+}
+
+function resetGame() {
+  // Reset game variables
+  bird.y = canvas.height / 2; // Reset bird's position
+  bird.velocity = 0;
+  pipes.length = 0; // Clear pipes
+  frameCount = 0; // Reset frame count
+  playerScore = 0; // Reset score
+  showEndScreen = false; // Hide end game screen
+  paused = true; // Keep the game paused
+}
+
+document.addEventListener("keydown", (e) => {
+  if (e.code === "Space") {
+    if (showEndScreen) {
+      resetGame(); // Reset the game if on the end screen
+    } else if (paused) {
+      paused = false; // Start or resume the game
+    } else {
+      bird.velocity = bird.lift; // Make the bird jump
+    }
+  }
+});
+
+function drawEndScreen() {
+  // Draw a semi-transparent overlay
+  ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // Display "Game Over" text
+  ctx.font = "60px Arial";
+  ctx.textAlign = "center";
+  ctx.fillStyle = "white";
+  ctx.strokeStyle = "black";
+  ctx.lineWidth = 5;
+
+  ctx.strokeText("Game Over", canvas.width / 2, canvas.height / 3);
+  ctx.fillText("Game Over", canvas.width / 2, canvas.height / 3);
+
+  // Display the player's score
+  ctx.font = "40px Arial";
+  ctx.strokeText(`Score: ${playerScore}`, canvas.width / 2, canvas.height / 2);
+  ctx.fillText(`Score: ${playerScore}`, canvas.width / 2, canvas.height / 2);
+
+  // Display restart instructions
+  ctx.font = "30px Arial";
+  ctx.strokeText("Press Space to Restart", canvas.width / 2, canvas.height * (2 / 3));
+  ctx.fillText("Press Space to Restart", canvas.width / 2, canvas.height * (2 / 3));
+}
+
 function gameLoop() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  if (!paused) {
+
+  if (!paused && !showEndScreen) {
     update();
     drawBackground();
     drawPipes();
@@ -283,8 +321,13 @@ function gameLoop() {
     drawBird();
     drawScore();
     killBird();
+  } else if (showEndScreen) {
+    drawBackground();
+    drawPipes();
+    drawGround();
+    drawBird();
+    drawEndScreen(); // Draw the end screen when the game is over
   } else {
-    
     drawBackground();
     drawPipes();
     drawGround();
@@ -297,14 +340,13 @@ function gameLoop() {
     ctx.strokeStyle = "black";
 
     ctx.lineWidth = 5;
-    ctx.strokeText("Press Space to Start", canvas.width / 2, canvas.height * (1/3));
+    ctx.strokeText("Press Space to Start", canvas.width / 2, canvas.height * (1 / 3));
 
     ctx.fillStyle = "white";
-    ctx.fillText("Press Space to Start", canvas.width / 2, canvas.height * (1/3));
+    ctx.fillText("Press Space to Start", canvas.width / 2, canvas.height * (1 / 3));
   }
   requestAnimationFrame(gameLoop);
 }
-
 
 // This should hopefully start the game when the canvas is loaded
 birdImage.onload = () => {
