@@ -23,13 +23,18 @@ const groundImage = new Image();
 groundImage.src = "images/ground.png";
 let groundX = 0; 
 
+const pipeCapImage = new Image();
+pipeCapImage.src = "images/pipeCap.png";
+
+const pipeBodyImage = new Image();
+pipeBodyImage.src = "images/pipeBody.png"; 
 
 
 const bird = {
   x: canvas.width * (1/3),
   y: canvas.height / 2,
   width: 100,
-  height: 100,
+  height: 68,
   gravity: 0.5,
   lift: -10,
   velocity: 0,
@@ -93,7 +98,7 @@ function update() {
 
   // Spawn new pipes at intervals
   if (frameCount % pipeFrequency === 0) {
-    const pipeTopY = Math.random() * (canvas.height - pipeGap - 100) + 25; // Random position for top pipe
+    const pipeTopY = Math.random() * (canvas.height - pipeGap - 150) + 50; // Random position for top pipe
     const pipeBottomY = pipeTopY + pipeGap; // Bottom pipe starts after the gap
 
     // Add the top pipe
@@ -136,18 +141,44 @@ function drawBird() {
 }
 
 
+// function drawPipes() {
+//   ctx.fillStyle = "green";
+//   for (const pipe of pipes) {
+//     if (pipe.y === 0) {
+//       ctx.fillRect(pipe.x, pipe.y, pipe.width, pipe.height);
+//       ctx.fillRect(pipe.x-5, pipe.height, pipe.width+10, 20);
+//     } else {
+//       ctx.fillRect(pipe.x, pipe.y, pipe.width, pipe.height);
+//       ctx.fillRect(pipe.x-5, pipe.y, pipe.width+10, -20);
+//     }
+//   }
+// }
+
 function drawPipes() {
-  ctx.fillStyle = "green";
+  pipeCapImageHeight = 30
   for (const pipe of pipes) {
     if (pipe.y === 0) {
-      ctx.fillRect(pipe.x, pipe.y, pipe.width, pipe.height);
-      ctx.fillRect(pipe.x-5, pipe.height, pipe.width+10, 20);
+      // Top pipe
+      let remainingHeight = pipe.height - pipeCapImageHeight;
+      for (let y = 0; y < remainingHeight; y += pipeBodyImage.height) {
+        const sliceHeight = Math.min(pipeBodyImage.height, remainingHeight - y);
+        ctx.drawImage(pipeBodyImage, 0, 0, pipeBodyImage.width, sliceHeight, pipe.x, y, pipe.width, sliceHeight);
+      }
+      // Draw the cap
+      ctx.drawImage(pipeCapImage, pipe.x-5, pipe.height - pipeCapImageHeight, pipe.width+10, pipeCapImageHeight);
     } else {
-      ctx.fillRect(pipe.x, pipe.y, pipe.width, pipe.height);
-      ctx.fillRect(pipe.x-5, pipe.y, pipe.width+10, -20);
+      // Bottom pipe
+      let remainingHeight = pipe.height - pipeCapImageHeight;
+      for (let y = pipe.y + pipeCapImageHeight; y < pipe.y + pipe.height; y += pipeBodyImage.height) {
+        const sliceHeight = Math.min(pipeBodyImage.height, remainingHeight - (y - pipe.y - pipeCapImageHeight));
+        ctx.drawImage(pipeBodyImage, 0, 0, pipeBodyImage.width, sliceHeight, pipe.x, y, pipe.width, sliceHeight);
+      }
+      // Draw the cap
+      ctx.drawImage(pipeCapImage, pipe.x-5, pipe.y, pipe.width+10, pipeCapImageHeight);
     }
   }
 }
+
 
 function drawScore() {
   ctx.font = "50px Arial";
