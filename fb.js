@@ -1,11 +1,14 @@
-// Select the canvas element
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 
-let gameOver = false; // To track if the game is over
+let showEndScreen = false;
+let gameOver = false; 
+let paused = true;
 
+let playerScore = 0;
+let highScore = 0;
 
-// Set the canvas size to match the height of the viewport (making it a square)
+// Set the canvas size to match viewport
 const canvasSize = window.innerHeight; 
 canvas.width = canvasSize;
 canvas.height = canvasSize;
@@ -13,18 +16,20 @@ canvas.height = canvasSize;
 // Using the Image class
 // https://developer.mozilla.org/en-US/docs/Web/API/HTMLImageElement/Image
 const birdImage = new Image();
-birdImage.src = "images/birb.png";
+birdImage.src = "images/bird.png";
 
+// Terrain image def
 const backgroundImage = new Image();
-backgroundImage.src = "images/background.png"; // Replace with your background image path
-
-let backgroundX = 0; // Initial x-coordinate for the background
-const backgroundSpeed = 1; // Adjust the speed of the background movement
+backgroundImage.src = "images/background.png";
+let backgroundX = 0; // Starting x val for wrapping background
+const backgroundSpeed = 1;
 
 const groundImage = new Image();
 groundImage.src = "images/ground.png";
 let groundX = 0; 
+const groundHeight = 85;
 
+// Pipe image def
 const pipeCapImage = new Image();
 pipeCapImage.src = "images/pipeCap.png";
 
@@ -32,6 +37,7 @@ const pipeBodyImage = new Image();
 pipeBodyImage.src = "images/pipeBody.png"; 
 
 
+// Player class
 const bird = {
   x: canvas.width * (1/3),
   y: canvas.height / 2,
@@ -42,79 +48,102 @@ const bird = {
   velocity: 0,
 };
 
-let paused = true;
+// Pipe vars
+const pipes = []; // Pipes list
+const pipeWidth = 75;
+const pipeGap = 250;
+const pipeSpeed = 4;
+const minHeight = 150;
+const maxHeight = 50;
 
-const pipes = []; // Array to store pipe objects
-const pipeWidth = 75; // Width of the pipes
-const pipeGap = 250; // Gap between top and bottom pipes
-const pipeSpeed = 4; // Speed at which pipes move to the left
-const pipeFrequency = 125; // Frames between spawning new pipes
-let frameCount = 0; // Frame counter for controlling pipe spawn rate
+// Count frames between since last spawn of new pipe
+let frameCount = 0;
+const pipeFrequency = 125; // Frames between pipes
 
-let playerScore = 0;
-let highScore = 0;
 
+// Listener for jumping
 document.addEventListener("keydown", (e) => {
   if (e.code === "Space") {
-    if (paused) {
-      paused = false; // Unpause the game
-    } else {
-      bird.velocity = bird.lift; // Make the bird jump
-    }
+    if (showEndScreen) {
+      resetGame(); // Reset the game if on the end screen
+    } else if (paused) {
+      paused = false;
+    } 
+    // Removed else statment to avoid the need to spam space when game begins
+    bird.velocity = bird.lift; // Applies upward velocity
   }
 });
 
+
+// Listener for pausing game
 document.addEventListener("keydown", (e) => {
   if (e.code === "Escape") {
     if (paused) {
-      paused = false; // Unpause the game
+      paused = false;
     } else {
       paused = true;
     }
   }
 });
 
+// Main Game Loop
+function gameLoop() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  if (!paused && !showEndScreen) {
+    update();
+    drawObjects();
+    drawScore();
+    killBird();
+  } else if (showEndScreen) {
+    drawObjects();
+    drawEndScreen();
+  } else {
+    drawObjects();
+    drawScore();
+    drawPauseScreen();
+  }
+  requestAnimationFrame(gameLoop);
+}
+
+// Called every frame, handles moving bird, moving pipes and spawning pipes
 function update() {
   bird.velocity += bird.gravity;
   bird.y += bird.velocity;
 
-  // TODO Update to kill bird when it hits the ground
-  if (bird.y + bird.height > canvas.height) {
-    bird.y = canvas.height - bird.height;
-    bird.velocity = 0;
-  }
-
-  // Update pipes
+  // Moves existing pipes
   for (let i = pipes.length - 1; i >= 0; i--) {
-    pipes[i].x -= pipeSpeed; // Move pipe to the left
+    pipes[i].x -= pipeSpeed;
 
+    // Gives player score if pipe has not been scored and is past bird
     if (pipes[i].scored == false && pipes[i].x + pipeWidth < bird.x) {
       playerScore++; 
       highScore = Math.max(playerScore, highScore);
       pipes[i].scored = true;
     }
 
-    // Remove pipes that are off-screen
+    // Remove pipes that move off the screen
     if (pipes[i].x + pipeWidth < 0) {
       pipes.splice(i, 1);
     }
   }
 
-  // Spawn new pipes at intervals
+  // Spawn new pipes
   if (frameCount % pipeFrequency === 0) {
-    const pipeTopY = Math.random() * (canvas.height - pipeGap - 150) + 50; // Random position for top pipe
-    const pipeBottomY = pipeTopY + pipeGap; // Bottom pipe starts after the gap
+    // Pick lengths of pipes
+    const pipeTopY = Math.random() * (canvas.height - pipeGap - minHeight) + maxHeight;
+    const pipeBottomY = pipeTopY + pipeGap;
 
-    // Add the top pipe
+    // Top pipe
     pipes.push({
       x: canvas.width,
       y: 0,
       width: pipeWidth,
       height: pipeTopY,
-      scored: false,
+      scored: false, // Tracks if player has passed this pipe
     });
 
-    // Add the bottom pipe
+    // Bottom pipe
     pipes.push({
       x: canvas.width,
       y: pipeBottomY,
@@ -126,21 +155,26 @@ function update() {
   frameCount++;
 }
 
-function drawBird() {
-  // Save the current canvas context state
-  ctx.save();
+function drawObjects() {
+  drawBackground();
+  drawPipes();
+  drawGround();
+  drawBird();
+}
 
-  // Move the canvas origin to the bird's position
+function drawBird() {
+  ctx.save();
   ctx.translate(bird.x + bird.width / 2, bird.y + bird.height / 2);
 
-  // Calculate the angle based on the bird's velocity (you can tweak this multiplier for desired effect)
-  const angle = Math.min(Math.max(bird.velocity / 10, -.75), 1); // Limits the rotation between -1 and 1
-  ctx.rotate(angle);  // Rotate the canvas based on the bird's velocity
+  // Calculate angle based on bird's velocity
+  const downRotate = -.75;
+  const upRotate = 1
+  const angle = Math.min(Math.max(bird.velocity / 10, downRotate), upRotate);
+  ctx.rotate(angle);
 
-  // Draw the bird (drawImage will now take the rotated context into account)
   ctx.drawImage(birdImage, -bird.width / 2, -bird.height / 2, bird.width, bird.height);
 
-  // Restore the original canvas context (removes the rotation effect)
+  // Removes rotation effect for future draws
   ctx.restore();
 }
 
@@ -158,26 +192,27 @@ function drawBird() {
 //   }
 // }
 
+// Pipe body is drawn until height is reached, then cap is drawn on top
 function drawPipes() {
-  pipeCapImageHeight = 30
+  pipeCapImageHeight = 30;
+  // Loop through all pipes within list
   for (const pipe of pipes) {
-    if (pipe.y === 0) {
-      // Top pipe
+    if (pipe.y === 0) { // Top pipe
       let remainingHeight = pipe.height - pipeCapImageHeight;
+      // Loop through height until height for pipe is less than pipe body's height
       for (let y = 0; y < remainingHeight; y += pipeBodyImage.height) {
         const sliceHeight = Math.min(pipeBodyImage.height, remainingHeight - y);
         ctx.drawImage(pipeBodyImage, 0, 0, pipeBodyImage.width, sliceHeight, pipe.x, y, pipe.width, sliceHeight);
       }
-      // Draw the cap
+      // Draw the cap over tiled pipe body
       ctx.drawImage(pipeCapImage, pipe.x-5, pipe.height - pipeCapImageHeight, pipe.width+10, pipeCapImageHeight);
-    } else {
-      // Bottom pipe
+    } 
+    else { // Bottom pipe
       let remainingHeight = pipe.height - pipeCapImageHeight;
       for (let y = pipe.y + pipeCapImageHeight; y < pipe.y + pipe.height; y += pipeBodyImage.height) {
         const sliceHeight = Math.min(pipeBodyImage.height, remainingHeight - (y - pipe.y - pipeCapImageHeight));
         ctx.drawImage(pipeBodyImage, 0, 0, pipeBodyImage.width, sliceHeight, pipe.x, y, pipe.width, sliceHeight);
       }
-      // Draw the cap
       ctx.drawImage(pipeCapImage, pipe.x-5, pipe.y, pipe.width+10, pipeCapImageHeight);
     }
   }
@@ -196,32 +231,29 @@ function drawScore() {
   ctx.fillText(`Score: ${playerScore}`, canvas.width - 25, 60); 
 }
 
+
 function drawBackground() {
-  // Draw the first instance of the background
+  // Draw first background image
   ctx.drawImage(backgroundImage, backgroundX, 0, canvas.width, canvas.height);
 
-  // Draw the second instance of the background right after the first one
+  // Draw second background image to the right of the first image
   ctx.drawImage(backgroundImage, backgroundX + canvas.width, 0, canvas.width, canvas.height);
 
+
   if (!paused){
-    // Update the background position
     backgroundX -= backgroundSpeed;
 
-    // Reset the position when the first image is completely off-screen
+    // Reset position of background when image is off screened
     if (backgroundX <= -canvas.width) {
       backgroundX = 0;
     }
   }
 }
 
-
+// Cannot be drawn with background because ground needs to be drawn above/after pipes
 function drawGround() {
-  const groundHeight = 85; // Set the height of the ground (adjust as needed)
-
-  // Draw the first instance of the ground image
+  // Draw first ground images
   ctx.drawImage(groundImage, groundX, canvas.height - groundHeight, canvas.width, groundHeight);
-
-  // Draw the second instance of the ground image for seamless scrolling
   ctx.drawImage(groundImage, groundX + canvas.width, canvas.height - groundHeight, canvas.width, groundHeight);
 
   if(!paused){
@@ -233,16 +265,57 @@ function drawGround() {
   }
 }
 
+// Display end screen with Game Over text, and players current and high scores
+function drawEndScreen() {
+  ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
 
+  ctx.font = "60px Arial";
+  ctx.textAlign = "center";
+  ctx.fillStyle = "white";
+  ctx.strokeStyle = "black";
+  ctx.lineWidth = 5;
 
-let showEndScreen = false;
+  ctx.strokeText("Game Over", canvas.width / 2, canvas.height / 3);
+  ctx.fillText("Game Over", canvas.width / 2, canvas.height / 3);
+
+  ctx.font = "40px Arial";
+  ctx.strokeText(`Score: ${playerScore}`, canvas.width / 2, canvas.height / 2 - 25);
+  ctx.fillText(`Score: ${playerScore}`, canvas.width / 2, canvas.height / 2 - 25);
+
+  ctx.font = "40px Arial";
+  ctx.strokeText(`High Score: ${highScore}`, canvas.width / 2, canvas.height / 2 + 25);
+  ctx.fillText(`High Score: ${highScore}`, canvas.width / 2, canvas.height / 2 + 25);
+
+  ctx.font = "30px Arial";
+  ctx.strokeText("Press Space to Restart", canvas.width / 2, canvas.height * (2 / 3));
+  ctx.fillText("Press Space to Restart", canvas.width / 2, canvas.height * (2 / 3));
+}
+
+// Display end screen with Game Over text, and players current and high scores
+function drawPauseScreen() {
+  ctx.fillStyle = "rgba(0, 0, 0, 0.4)";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  ctx.font = "50px Arial";
+  ctx.textAlign = "center";
+  ctx.strokeStyle = "black";
+
+  ctx.lineWidth = 5;
+  ctx.strokeText("Press Space to Start", canvas.width / 2, canvas.height / 3);
+
+  ctx.fillStyle = "white";
+  ctx.fillText("Press Space to Start", canvas.width / 2, canvas.height / 3);
+}
 
 function killBird() {
-  if (bird.y + bird.height >= canvas.height - 85) {
+  // Check for ground collision
+  if (bird.y + bird.height >= canvas.height - groundHeight) {
     endGame();
     return;
   }
 
+  // Check for bird entering volume of any pipe
   for (const pipe of pipes) {
     if (
       bird.x < pipe.x + pipe.width &&
@@ -254,8 +327,8 @@ function killBird() {
       return;
     }
 
+    // Check to make sure player is not above top pipe
     if (bird.y < 0 && bird.x > pipe.x && !pipe.passed) {
-      pipe.passed = true;
       endGame();
       return;
     }
@@ -263,103 +336,23 @@ function killBird() {
 }
 
 function endGame() {
-  paused = true; // Pause the game
-  showEndScreen = true; // Show the end game screen
+  paused = true;
+  showEndScreen = true;
 }
 
 function resetGame() {
-  // Reset game variables
-  bird.y = canvas.height / 2; // Reset bird's position
+  showEndScreen = false;
+  paused = true;
+
+  bird.y = canvas.height / 2;
   bird.velocity = 0;
   pipes.length = 0; // Clear pipes
-  frameCount = 0; // Reset frame count
-  playerScore = 0; // Reset score
-  showEndScreen = false; // Hide end game screen
-  paused = true; // Keep the game paused
+  frameCount = 0;
+  playerScore = 0;
+  
 }
 
-document.addEventListener("keydown", (e) => {
-  if (e.code === "Space") {
-    if (showEndScreen) {
-      resetGame(); // Reset the game if on the end screen
-    } else if (paused) {
-      paused = false; // Start or resume the game
-    } else {
-      bird.velocity = bird.lift; // Make the bird jump
-    }
-  }
-});
-
-function drawEndScreen() {
-  // Draw a semi-transparent overlay
-  ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-  // Display "Game Over" text
-  ctx.font = "60px Arial";
-  ctx.textAlign = "center";
-  ctx.fillStyle = "white";
-  ctx.strokeStyle = "black";
-  ctx.lineWidth = 5;
-
-  ctx.strokeText("Game Over", canvas.width / 2, canvas.height / 3);
-  ctx.fillText("Game Over", canvas.width / 2, canvas.height / 3);
-
-  // Display the player's score
-  ctx.font = "40px Arial";
-  ctx.strokeText(`Score: ${playerScore}`, canvas.width / 2, canvas.height / 2 - 25);
-  ctx.fillText(`Score: ${playerScore}`, canvas.width / 2, canvas.height / 2 - 25);
-
-  // Display the player's high score
-  ctx.font = "40px Arial";
-  ctx.strokeText(`High Score: ${highScore}`, canvas.width / 2, canvas.height / 2 + 25);
-  ctx.fillText(`High Score: ${highScore}`, canvas.width / 2, canvas.height / 2 + 25);
-
-  // Display restart instructions
-  ctx.font = "30px Arial";
-  ctx.strokeText("Press Space to Restart", canvas.width / 2, canvas.height * (2 / 3));
-  ctx.fillText("Press Space to Restart", canvas.width / 2, canvas.height * (2 / 3));
-}
-
-function gameLoop() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-  if (!paused && !showEndScreen) {
-    update();
-    drawBackground();
-    drawPipes();
-    drawGround();
-    drawBird();
-    drawScore();
-    killBird();
-  } else if (showEndScreen) {
-    drawBackground();
-    drawPipes();
-    drawGround();
-    drawBird();
-    drawEndScreen(); // Draw the end screen when the game is over
-  } else {
-    drawBackground();
-    drawPipes();
-    drawGround();
-    drawBird();
-    drawScore();
-
-    // Draw the paused screen overlay
-    ctx.font = "50px Arial";
-    ctx.textAlign = "center";
-    ctx.strokeStyle = "black";
-
-    ctx.lineWidth = 5;
-    ctx.strokeText("Press Space to Start", canvas.width / 2, canvas.height * (1 / 3));
-
-    ctx.fillStyle = "white";
-    ctx.fillText("Press Space to Start", canvas.width / 2, canvas.height * (1 / 3));
-  }
-  requestAnimationFrame(gameLoop);
-}
-
-// This should hopefully start the game when the canvas is loaded
+// Start the game when canvas is loaded
 birdImage.onload = () => {
   gameLoop();
 };
